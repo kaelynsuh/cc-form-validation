@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import styled from 'styled-components';
 
 import ErrorIcon from './ErrorIcon';
@@ -126,7 +126,7 @@ const CARDS = {
   },
 };
 
-const CCForm = () => {
+const CCForm = memo(() => {
   const [showForm, setShowForm] = useState(true);
 
   const [data, setData] = useState({
@@ -242,6 +242,7 @@ const CCForm = () => {
           <H3>Enter your credit card information</H3>
 
           <Input
+            data-testid="name"
             type="text"
             name="name"
             id="name"
@@ -253,13 +254,14 @@ const CCForm = () => {
             error={errors.name}
           />
           {errors.name && (
-            <ErrorMessage>
+            <ErrorMessage data-testid="error-name">
               <ErrorIcon />
               {errors.name}
             </ErrorMessage>
           )}
 
           <Input
+            data-testid="card"
             type="tel"
             name="card"
             id="card"
@@ -276,13 +278,14 @@ const CCForm = () => {
             error={errors.card}
           />
           {errors.card && (
-            <ErrorMessage>
+            <ErrorMessage data-testid="error-card">
               <ErrorIcon />
               {errors.card}
             </ErrorMessage>
           )}
 
           <Input
+            data-testid="cvv"
             type="text"
             name="cvv"
             id="cvv"
@@ -299,7 +302,7 @@ const CCForm = () => {
             error={errors.cvv}
           />
           {errors.cvv && (
-            <ErrorMessage>
+            <ErrorMessage data-testid="error-cvv">
               <ErrorIcon />
               {errors.cvv}
             </ErrorMessage>
@@ -308,6 +311,7 @@ const CCForm = () => {
           <Expiry>
             <InputGroup>
               <NumberInput
+                data-testid="exp-month"
                 type="number"
                 name="exp-month"
                 id="exp-month"
@@ -326,7 +330,7 @@ const CCForm = () => {
                 error={errors.expMonth}
               />
               {errors.expMonth && (
-                <StyledErrorMessage>
+                <StyledErrorMessage data-testid="error-exp-month">
                   <ErrorIcon />
                   {errors.expMonth}
                 </StyledErrorMessage>
@@ -335,6 +339,7 @@ const CCForm = () => {
 
             <StyledInputGroup>
               <NumberInput
+                data-testid="exp-year"
                 type="number"
                 name="exp-year"
                 id="exp-year"
@@ -353,7 +358,7 @@ const CCForm = () => {
                 error={errors.expYear}
               />
               {errors.expYear && (
-                <StyledErrorMessage>
+                <StyledErrorMessage data-testid="error-exp-year">
                   <ErrorIcon />
                   {errors.expYear}
                 </StyledErrorMessage>
@@ -363,12 +368,16 @@ const CCForm = () => {
 
           <CardImage />
 
-          <Button type="submit" disabled={Object.keys(errors).length}>
+          <Button
+            data-testid="submit"
+            type="submit"
+            disabled={Object.keys(errors).length}
+          >
             Submit
           </Button>
         </Form>
       ) : (
-        <Result>
+        <Result data-testid="result">
           <div
             className="material-icons"
             style={{
@@ -384,6 +393,6 @@ const CCForm = () => {
       )}
     </Container>
   );
-};
+});
 
 export default CCForm;
