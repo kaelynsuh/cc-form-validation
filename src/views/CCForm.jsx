@@ -21,6 +21,10 @@ const Input = styled.input`
   /* text-align: center; */
 `;
 
+const NumberInput = styled(Input)`
+  width: 80%;
+`;
+
 const Expiry = styled.div`
   display: flex;
   justify-content: space-between;
@@ -35,200 +39,213 @@ const CCForm = () => {
   const [data, setData] = useState({
     name: '',
     card: '',
-  }); // input, value
-  const [errors, setErrors] = useState({});
+    cvv: '',
+    expMonth: '',
+    expYear: '',
+  });
 
-  const [cardData, setCardData] = useState('');
-  // console.log('cardData: ', cardData);
+  const [errors, setErrors] = useState({
+    name: '',
+    card: '',
+    cvv: '',
+    expMonth: '',
+    expYear: '',
+  });
 
-  console.log('data: ', data);
-  console.log('errors: ', errors);
+  const [showForm, setShowForm] = useState(true);
 
-  // const nameRef = useRef();
+  console.log('data MAIN: ', data);
+  console.log('errors MAIN: ', errors);
 
   const onChange = (type) => (e) => {
     console.log('e.target.validity: ', e.target.validity);
-    // console.log('e.target.validationMessage: ', e.target.validationMessage);
+    console.log('e.target.validationMessage: ', e.target.validationMessage);
 
     setData({
       ...data,
       [type]: e.target.value,
     });
 
-    setErrors({
-      ...errors,
-      [type]: e.target.validationMessage,
-    });
+    if (e.target.validationMessage) {
+      setErrors({
+        ...errors,
+        [type]: e.target.validationMessage,
+      });
+    } else {
+      delete errors[type];
+    }
   };
 
-  const onNameChange = useCallback(
-    (type, value) => {
-      // debugger;
-      let errorMessage;
-      if (value.length === 0) {
-        errorMessage = 'name: field cannot be empty';
-      } else if (!value.match(/^[a-zA-Z]+$/g)) {
-        errorMessage = 'name: name not valid';
-      }
+  const onCardChange = (type) => (e) => {
+    let value = e.target.value;
+    let match = value.replace(/\s+/g, '');
 
-      // revisit: if error, unset name?
+    let errorMessage;
+    if (value.length === 0) {
+      errorMessage = 'Please fill out this field.';
+    } else if (match.length < 16) {
+      errorMessage = 'Invalid card number.';
+    }
+
+    let groups = [];
+    for (let i = 0; i < match.length; i += 4) {
+      groups.push(match.substring(i, i + 4));
+    }
+
+    if (groups.length) {
       setData({
         ...data,
-        [type]: value,
+        [type]: groups.join(' '),
       });
+    } else {
+      setData({
+        ...data,
+        [type]: match,
+      });
+    }
 
+    if (errorMessage) {
       setErrors({
         ...errors,
         [type]: errorMessage,
       });
-    },
-    [data, errors]
-  );
-
-  const onCardChange = useCallback(
-    (type, value) => {
-      let errorMessage;
-      if (value.length === 0) {
-        errorMessage = 'card: field cannot be empty';
-      } else if (value.length < 18) {
-        errorMessage = 'card: invalid character';
-      }
-
-      let match = value.replace(/\s+/g, '').replace(/[^0-9]/g, ''); // no onKeyPress needed
-      console.log('match: ', match);
-
-      var groups = [];
-      for (let i = 0; i < match.length; i += 4) {
-        groups.push(match.substring(i, i + 4));
-      }
-
-      if (groups.length) {
-        // setCardData(groups.join(' '));
-        setData({
-          ...data,
-          [type]: groups.join(' '),
-        });
-      } else {
-        // setCardData(match);
-        setData({
-          ...data,
-          [type]: match,
-        });
-      }
-
-      setErrors({
-        ...errors,
-        [type]: errorMessage,
-      });
-    },
-    [data, errors]
-  );
+    } else {
+      delete errors[type];
+    }
+  };
 
   const handleOnSubmit = (e) => {
     e.preventDefault();
 
+    setShowForm(false);
     console.log('data: ', data);
-    console.log('errors: ', errors);
-
-    onNameChange('name', data.name);
-    onCardChange('card', data.card);
-
-    // check if errors is empty
-    if (Object.keys(errors).length === 0) {
-      console.log('no errors!!!!');
-    }
   };
 
   return (
     <Container>
-      <Form onSubmit={handleOnSubmit}>
-        <h3>Enter your credit card information</h3>
+      {showForm ? (
+        <Form onSubmit={handleOnSubmit}>
+          <h3>Enter your credit card information</h3>
 
-        <Input
-          type="text"
-          name="name"
-          id="name"
-          // ref={nameRef}
-          placeholder="Name"
-          // onChange={onChange('name')}
-          onChange={(e) => onNameChange('name', e.target.value)}
-          // pattern="^[a-zA-Z]*$"
-          maxLength="40"
-          required
-        />
-        {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
-
-        <Input
-          type="tel"
-          name="card-number"
-          id="card-number"
-          placeholder="Card Number"
-          // value={cardData}
-          value={data.card}
-          // onChange={onCardChange('card')}
-          onChange={(e) => onCardChange('card', e.target.value)}
-          // onKeyPress={(event) => {
-          //   if (!/[0-9]/.test(event.key)) {
-          //     event.preventDefault();
-          //   }
-          // }}
-          maxLength="19"
-          // required
-        />
-        {errors.card && <ErrorMessage>{errors.card}</ErrorMessage>}
-
-        <Input
-          type="text"
-          name="cvv"
-          id="cvv"
-          placeholder="CVV2"
-          onChange={onChange('cvv')}
-          onKeyPress={(event) => {
-            if (!/[0-9]/.test(event.key)) {
-              event.preventDefault();
-            }
-          }}
-          maxLength="4"
-          // required
-        />
-        {errors.cvv && <ErrorMessage>{errors.cvv}</ErrorMessage>}
-
-        <Expiry>
           <Input
             type="text"
-            name="exp-month"
-            id="exp-month"
-            placeholder="Exp. Month"
-            onChange={onChange('expMonth')}
+            name="name"
+            id="name"
+            // ref={nameRef}
+            placeholder="Name"
+            onChange={onChange('name')}
+            // onChange={(e) => onNameChange('name', e.target.value)}
+            pattern="^[a-zA-Z]*$"
+            maxLength="40"
+            required
+          />
+          {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
+
+          <Input
+            type="tel"
+            name="card"
+            id="card"
+            placeholder="Card Number"
+            value={data.card}
+            onChange={onCardChange('card')}
             onKeyPress={(event) => {
               if (!/[0-9]/.test(event.key)) {
                 event.preventDefault();
               }
             }}
-            min="1"
-            max="12"
-            maxLength="2"
-            // required
+            maxLength="19"
+            required
           />
+          {errors.card && <ErrorMessage>{errors.card}</ErrorMessage>}
 
           <Input
             type="text"
-            name="exp-year"
-            id="exp-year"
-            onChange={onChange('expYear')}
-            placeholder="Exp. Year"
+            name="cvv"
+            id="cvv"
+            placeholder="CVV2"
+            onChange={onChange('cvv')}
             onKeyPress={(event) => {
               if (!/[0-9]/.test(event.key)) {
                 event.preventDefault();
               }
             }}
-            maxLength="2"
-            // required
+            minLength="3"
+            maxLength="4"
+            required
           />
-        </Expiry>
+          {errors.cvv && <ErrorMessage>{errors.cvv}</ErrorMessage>}
 
-        <button type="submit">Submit</button>
-      </Form>
+          <Expiry>
+            {/* <div> */}
+            <div style={{ width: '50%' }}>
+              <NumberInput
+                // type="text"
+                type="number"
+                name="exp-month"
+                id="exp-month"
+                placeholder="Exp. Month"
+                onChange={onChange('expMonth')}
+                onKeyPress={(event) => {
+                  if (!/[0-9]/.test(event.key)) {
+                    event.preventDefault();
+                  }
+                }}
+                value={data.expMonth}
+                min="1"
+                max="12"
+                maxLength="2"
+                required
+              />
+              {errors.expMonth && (
+                // <ErrorMessage style={{ width: '140px' }}>
+                <ErrorMessage style={{ width: '90%' }}>
+                  {errors.expMonth}
+                </ErrorMessage>
+              )}
+            </div>
+
+            {/* <div> */}
+            <div
+              style={{
+                width: '50%',
+                display: 'flex',
+                alignItems: 'end',
+                flexDirection: 'column',
+              }}
+            >
+              <NumberInput
+                // type="text"
+                type="number"
+                name="exp-year"
+                id="exp-year"
+                onChange={onChange('expYear')}
+                placeholder="Exp. Year (YY)"
+                onKeyPress={(event) => {
+                  if (!/[0-9]/.test(event.key)) {
+                    event.preventDefault();
+                  }
+                }}
+                value={data.expYear}
+                min="21"
+                max="99"
+                maxLength="2"
+                required
+              />
+              {errors.expYear && (
+                <ErrorMessage style={{ width: '90%' }}>
+                  {errors.expYear}
+                </ErrorMessage>
+              )}
+            </div>
+          </Expiry>
+
+          <button type="submit" disabled={Object.keys(errors).length}>
+            Submit
+          </button>
+        </Form>
+      ) : (
+        <h2>Your card has been succesfully added.</h2>
+      )}
     </Container>
   );
 };
