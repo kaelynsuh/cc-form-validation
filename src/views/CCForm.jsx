@@ -1,9 +1,56 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
+
+import ErrorIcon from './ErrorIcon';
+
+import amex from '../assets/images/amex.png';
+import visa from '../assets/images/visa.png';
+import card from '../assets/images/card.png';
+
+const H3 = styled.h3`
+  font-weight: 600;
+`;
+
+const Button = styled.button`
+  border: 1px solid transparent;
+  color: #fff;
+  cursor: pointer;
+  background-color: #3984f3;
+  line-height: 1.5rem;
+  padding: 0.2rem 0.75rem;
+  text-transform: uppercase;
+
+  &:hover {
+    background-color: #1a70f0;
+  }
+
+  &:disabled {
+    background-color: #94bbf7;
+    cursor: default;
+  }
+`;
 
 const Container = styled.div`
   display: flex;
   justify-content: center;
+`;
+
+const ErrorMessage = styled.div`
+  display: flex;
+  align-items: center;
+
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+`;
+
+const StyledErrorMessage = styled(ErrorMessage)`
+  width: 90%;
+`;
+
+const Expiry = styled.div`
+  display: flex;
+  justify-content: space-between;
 `;
 
 const Form = styled.form`
@@ -15,25 +62,69 @@ const Form = styled.form`
   width: 400px;
 `;
 
-const Input = styled.input`
-  padding: 0.5rem;
+const Image = styled.img`
+  width: 50px;
   margin-bottom: 1rem;
-  /* text-align: center; */
+`;
+
+const StyledImage = styled(Image)`
+  width: 180px;
+`;
+
+const Input = styled.input`
+  border: 1px solid ${(props) => (props.error ? '#dc3545' : '#ced4da')};
+  border-radius: 0.25rem;
+  height: 1.5rem;
+  margin-bottom: ${(props) => (props.error ? '0.5rem' : '1.2rem')};
+  padding: 0.375rem 0.75rem;
+
+  &:focus {
+    border-color: ${(props) => (props.error ? '#dc3545' : '#ced4da')};
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem
+      ${(props) =>
+        props.error ? 'rgba(220, 53, 69, 0.25)' : 'rgba(0, 123, 255, 0.25)'};
+  }
+`;
+
+const InputGroup = styled.div`
+  width: 50%;
+`;
+
+const StyledInputGroup = styled(InputGroup)`
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
 `;
 
 const NumberInput = styled(Input)`
   width: 80%;
 `;
 
-const Expiry = styled.div`
+const Result = styled.div`
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+
+  margin: 5rem;
 `;
 
-const ErrorMessage = styled.div`
-  color: red;
-  margin-bottom: 1rem;
-`;
+const CARDS = {
+  amex: {
+    grouping: [4, 6, 5],
+    maxLength: 17,
+    cvv: 4,
+  },
+  visa: {
+    grouping: [4, 4, 4, 4],
+    maxLength: 19,
+    cvv: 3,
+  },
+  card: {
+    grouping: [4, 4, 4, 4],
+    maxLength: 19,
+    cvv: 3,
+  },
+};
 
 const CCForm = () => {
   const [showForm, setShowForm] = useState(true);
@@ -56,93 +147,76 @@ const CCForm = () => {
 
   const [cardType, setCardType] = useState('card');
 
-  const cards = {
-    amex: {
-      grouping: [4, 6, 5],
-      maxLength: 17,
-      cvv: 4,
-    },
-    visa: {
-      grouping: [4, 4, 4, 4],
-      maxLength: 19,
-      cvv: 3,
-    },
-    card: {
-      grouping: [4, 4, 4, 4],
-      maxLength: 19,
-      cvv: 3,
-    },
-  };
-  console.log('cards: ', cards['amex'].grouping);
+  const onChange = useCallback(
+    (type) => (e) => {
+      let value = e.target.value.trim();
 
-  console.log('data MAIN: ', data);
-  console.log('errors MAIN: ', errors);
-
-  const onChange = (type) => (e) => {
-    console.log('e.target.validity: ', e.target.validity);
-    console.log('e.target.validationMessage: ', e.target.validationMessage);
-
-    setData({
-      ...data,
-      [type]: e.target.value,
-    });
-
-    if (e.target.validationMessage) {
-      setErrors({
-        ...errors,
-        [type]: e.target.validationMessage,
-      });
-    } else {
-      delete errors[type];
-    }
-  };
-
-  const onCardChange = (type) => (e) => {
-    let value = e.target.value;
-    let match = value.replace(/\s+/g, '');
-
-    if (match.slice(0, 1) === '4') {
-      setCardType('visa');
-    } else if (match.slice(0, 2) === '34' || match.slice(0, 2) === '37') {
-      setCardType('amex');
-    } else {
-      setCardType('card');
-    }
-
-    let errorMessage;
-    if (value.length === 0) {
-      errorMessage = 'Please fill out this field.';
-    } else if (match.length < 16) {
-      errorMessage = 'Invalid card number.';
-    }
-
-    let groups = [];
-    let group = cards[cardType].grouping;
-    for (let i = 0, j = 0; i < match.length; i += group[j], j++) {
-      groups.push(match.substring(i, i + group[j]));
-    }
-
-    if (groups.length) {
       setData({
         ...data,
-        [type]: groups.join(' '),
+        [type]: value,
       });
-    } else {
-      setData({
-        ...data,
-        [type]: match,
-      });
-    }
 
-    if (errorMessage) {
-      setErrors({
-        ...errors,
-        [type]: errorMessage,
-      });
-    } else {
-      delete errors[type];
-    }
-  };
+      if (e.target.validationMessage) {
+        setErrors({
+          ...errors,
+          [type]: e.target.validationMessage,
+        });
+      } else {
+        delete errors[type];
+      }
+    },
+    [data, errors]
+  );
+
+  const onCardChange = useCallback(
+    (type) => (e) => {
+      let value = e.target.value;
+      let match = value.replace(/\s+/g, '');
+
+      if (match.slice(0, 1) === '4') {
+        setCardType('visa');
+      } else if (match.slice(0, 2) === '34' || match.slice(0, 2) === '37') {
+        setCardType('amex');
+      } else {
+        setCardType('card');
+      }
+
+      let errorMessage;
+      if (value.length === 0) {
+        errorMessage = 'Please fill out this field.';
+      } else if (match.length < 16) {
+        errorMessage = 'Invalid card number.';
+      }
+
+      let groups = [];
+      let group = CARDS[cardType].grouping;
+      for (let i = 0, j = 0; i < match.length; i += group[j], j++) {
+        groups.push(match.substring(i, i + group[j]));
+      }
+
+      if (groups.length) {
+        setData({
+          ...data,
+          [type]: groups.join(' '),
+        });
+      } else {
+        setData({
+          ...data,
+          [type]: match,
+        });
+      }
+
+      if (errorMessage) {
+        setErrors({
+          ...errors,
+          [type]: errorMessage,
+        });
+      } else {
+        delete errors[type];
+      }
+    },
+    [cardType, data, errors]
+  );
 
   const handleOnSubmit = (e) => {
     e.preventDefault();
@@ -151,11 +225,21 @@ const CCForm = () => {
     console.log('data: ', data);
   };
 
+  const CardImage = () => {
+    if (cardType === 'amex') {
+      return <Image src={amex} alt="amex card image" />;
+    } else if (cardType === 'visa') {
+      return <Image src={visa} alt="visa card image" />;
+    } else {
+      return <StyledImage src={card} alt="credit cards image" />;
+    }
+  };
+
   return (
     <Container>
       {showForm ? (
         <Form onSubmit={handleOnSubmit}>
-          <h3>Enter your credit card information</h3>
+          <H3>Enter your credit card information</H3>
 
           <Input
             type="text"
@@ -163,11 +247,17 @@ const CCForm = () => {
             id="name"
             placeholder="Name"
             onChange={onChange('name')}
-            pattern="^[a-zA-Z]*$"
+            pattern="^[\sa-zA-Z]*$"
             maxLength="40"
             required
+            error={errors.name}
           />
-          {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
+          {errors.name && (
+            <ErrorMessage>
+              <ErrorIcon />
+              {errors.name}
+            </ErrorMessage>
+          )}
 
           <Input
             type="tel"
@@ -181,10 +271,16 @@ const CCForm = () => {
                 event.preventDefault();
               }
             }}
-            maxLength={cards[cardType].maxLength}
+            maxLength={CARDS[cardType].maxLength}
             required
+            error={errors.card}
           />
-          {errors.card && <ErrorMessage>{errors.card}</ErrorMessage>}
+          {errors.card && (
+            <ErrorMessage>
+              <ErrorIcon />
+              {errors.card}
+            </ErrorMessage>
+          )}
 
           <Input
             type="text"
@@ -197,21 +293,25 @@ const CCForm = () => {
                 event.preventDefault();
               }
             }}
-            minLength={cards[cardType].cvv}
-            maxLength={cards[cardType].cvv}
+            minLength={CARDS[cardType].cvv}
+            maxLength={CARDS[cardType].cvv}
             required
+            error={errors.cvv}
           />
-          {errors.cvv && <ErrorMessage>{errors.cvv}</ErrorMessage>}
+          {errors.cvv && (
+            <ErrorMessage>
+              <ErrorIcon />
+              {errors.cvv}
+            </ErrorMessage>
+          )}
 
           <Expiry>
-            {/* <div> */}
-            <div style={{ width: '50%' }}>
+            <InputGroup>
               <NumberInput
-                // type="text"
                 type="number"
                 name="exp-month"
                 id="exp-month"
-                placeholder="Exp. Month"
+                placeholder="Exp. Month (MM)"
                 onChange={onChange('expMonth')}
                 onKeyPress={(event) => {
                   if (!/[0-9]/.test(event.key)) {
@@ -223,26 +323,18 @@ const CCForm = () => {
                 max="12"
                 maxLength="2"
                 required
+                error={errors.expMonth}
               />
               {errors.expMonth && (
-                // <ErrorMessage style={{ width: '140px' }}>
-                <ErrorMessage style={{ width: '90%' }}>
+                <StyledErrorMessage>
+                  <ErrorIcon />
                   {errors.expMonth}
-                </ErrorMessage>
+                </StyledErrorMessage>
               )}
-            </div>
+            </InputGroup>
 
-            {/* <div> */}
-            <div
-              style={{
-                width: '50%',
-                display: 'flex',
-                alignItems: 'end',
-                flexDirection: 'column',
-              }}
-            >
+            <StyledInputGroup>
               <NumberInput
-                // type="text"
                 type="number"
                 name="exp-year"
                 id="exp-year"
@@ -258,23 +350,37 @@ const CCForm = () => {
                 max="99"
                 maxLength="2"
                 required
+                error={errors.expYear}
               />
               {errors.expYear && (
-                <ErrorMessage style={{ width: '90%' }}>
+                <StyledErrorMessage>
+                  <ErrorIcon />
                   {errors.expYear}
-                </ErrorMessage>
+                </StyledErrorMessage>
               )}
-            </div>
+            </StyledInputGroup>
           </Expiry>
 
-          {/* <div>{cardType ? cardType : 'All card type'}</div> */}
+          <CardImage />
 
-          <button type="submit" disabled={Object.keys(errors).length}>
+          <Button type="submit" disabled={Object.keys(errors).length}>
             Submit
-          </button>
+          </Button>
         </Form>
       ) : (
-        <h2>Your card has been succesfully added.</h2>
+        <Result>
+          <div
+            className="material-icons"
+            style={{
+              color: '#6cbf6c',
+              fontSize: '1.5rem',
+              marginRight: '0.2rem',
+            }}
+          >
+            check_circle
+          </div>
+          <H3>Your card has been succesfully added.</H3>
+        </Result>
       )}
     </Container>
   );
