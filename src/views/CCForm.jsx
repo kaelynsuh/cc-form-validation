@@ -26,7 +26,7 @@ const Button = styled.button`
 
   &:disabled {
     background-color: #94bbf7;
-    cursor: default;
+    cursor: not-allowed;
   }
 `;
 
@@ -132,27 +132,96 @@ const CARDS = {
 const CCForm = memo(() => {
   const [showForm, setShowForm] = useState(true);
 
-  const [data, setData] = useState({
+  const initialState = {
     name: '',
     card: '',
     cvv: '',
     expMonth: '',
     expYear: '',
-  });
+  };
 
-  const [errors, setErrors] = useState({
-    name: '',
-    card: '',
-    cvv: '',
-    expMonth: '',
-    expYear: '',
-  });
-
+  const [data, setData] = useState(initialState);
+  const [errors, setErrors] = useState(initialState);
   const [cardType, setCardType] = useState('card');
+
+  console.log('data: ', data);
+  console.log('errors: ', errors);
+
+  let today = new Date();
+  let yyyy = today.getFullYear();
+  let month = today.getMonth() + 1; // 0 = January
 
   const onChange = useCallback(
     (type) => (e) => {
       let value = e.target.value.trim();
+      let errorMessage;
+
+      if (type === 'name') {
+        if (value.length > 40) {
+          errorMessage = 'Name exceed 40 characters';
+        } else {
+          errorMessage = '';
+        }
+      }
+
+      if (type === 'card') {
+        let match = value.replace(/\s+/g, '');
+
+        if (match.slice(0, 1) === '4') {
+          setCardType('visa');
+        } else if (match.slice(0, 2) === '34' || match.slice(0, 2) === '37') {
+          setCardType('amex');
+        } else {
+          setCardType('card');
+        }
+
+        if (value.length === 0) {
+          errorMessage = 'Please fill out this field.';
+        } else if (match.length < CARDS[cardType].length) {
+          errorMessage = 'Invalid card number.';
+        } else {
+          errorMessage = '';
+        }
+
+        let groups = [];
+        let group = CARDS[cardType].grouping;
+        for (let i = 0, j = 0; i < match.length; i += group[j], j++) {
+          groups.push(match.substring(i, i + group[j]));
+        }
+        value = groups.length ? groups.join(' ') : match;
+      }
+
+      if (type === 'cvv') {
+        if (value.length < CARDS[cardType].cvv) {
+          errorMessage = `CVV must be ${CARDS[cardType].cvv} characters long.`;
+        } else {
+          errorMessage = '';
+        }
+      }
+
+      if (type === 'expMonth') {
+        if (value < 1 || value > 12) {
+          errorMessage = 'Month must be between 1 and 12.';
+        } else if (data.expYear === yyyy.toString()) {
+          if (value <= month) {
+            errorMessage = 'Month must be in the future.';
+          } else {
+            errorMessage = '';
+          }
+        } else {
+          errorMessage = '';
+        }
+      }
+
+      if (type === 'expYear') {
+        if (value < yyyy || value > yyyy + 10) {
+          errorMessage = `Year must be between ${yyyy} and ${yyyy + 10}.`;
+        } else {
+          errorMessage = '';
+        }
+      }
+
+      e.target.setCustomValidity(errorMessage);
 
       setData({
         ...data,
@@ -168,57 +237,7 @@ const CCForm = memo(() => {
         delete errors[type];
       }
     },
-    [data, errors]
-  );
-
-  const onCardChange = useCallback(
-    (type) => (e) => {
-      let value = e.target.value;
-      let match = value.replace(/\s+/g, '');
-
-      if (match.slice(0, 1) === '4') {
-        setCardType('visa');
-      } else if (match.slice(0, 2) === '34' || match.slice(0, 2) === '37') {
-        setCardType('amex');
-      } else {
-        setCardType('card');
-      }
-
-      let errorMessage;
-      if (value.length === 0) {
-        errorMessage = 'Please fill out this field.';
-      } else if (match.length < CARDS[cardType].length) {
-        errorMessage = 'Invalid card number.';
-      }
-
-      let groups = [];
-      let group = CARDS[cardType].grouping;
-      for (let i = 0, j = 0; i < match.length; i += group[j], j++) {
-        groups.push(match.substring(i, i + group[j]));
-      }
-
-      if (groups.length) {
-        setData({
-          ...data,
-          [type]: groups.join(' '),
-        });
-      } else {
-        setData({
-          ...data,
-          [type]: match,
-        });
-      }
-
-      if (errorMessage) {
-        setErrors({
-          ...errors,
-          [type]: errorMessage,
-        });
-      } else {
-        delete errors[type];
-      }
-    },
-    [cardType, data, errors]
+    [cardType, data, errors, month, yyyy]
   );
 
   const handleOnSubmit = (e) => {
@@ -251,7 +270,6 @@ const CCForm = memo(() => {
             id="name"
             placeholder="Name"
             onChange={onChange('name')}
-            pattern="^[\sa-zA-Z]*$"
             maxLength="40"
             required
             error={errors.name}
@@ -265,12 +283,12 @@ const CCForm = memo(() => {
 
           <Input
             data-testid="card"
-            type="tel"
+            type="text"
             name="card"
             id="card"
             placeholder="Card Number"
             value={data.card}
-            onChange={onCardChange('card')}
+            onChange={onChange('card')}
             onKeyPress={(event) => {
               if (!/[0-9]/.test(event.key)) {
                 event.preventDefault();
@@ -315,7 +333,7 @@ const CCForm = memo(() => {
             <InputGroup>
               <NumberInput
                 data-testid="exp-month"
-                type="number"
+                type="text"
                 name="exp-month"
                 id="exp-month"
                 placeholder="Exp. Month (MM)"
@@ -326,8 +344,6 @@ const CCForm = memo(() => {
                   }
                 }}
                 value={data.expMonth}
-                min="1"
-                max="12"
                 maxLength="2"
                 required
                 error={errors.expMonth}
@@ -343,20 +359,18 @@ const CCForm = memo(() => {
             <StyledInputGroup>
               <NumberInput
                 data-testid="exp-year"
-                type="number"
+                type="text"
                 name="exp-year"
                 id="exp-year"
                 onChange={onChange('expYear')}
-                placeholder="Exp. Year (YY)"
+                placeholder="Exp. Year (YYYY)"
                 onKeyPress={(event) => {
                   if (!/[0-9]/.test(event.key)) {
                     event.preventDefault();
                   }
                 }}
                 value={data.expYear}
-                min="21"
-                max="99"
-                maxLength="2"
+                maxLength="4"
                 required
                 error={errors.expYear}
               />

@@ -1,5 +1,9 @@
 import { render, cleanup, fireEvent } from '@testing-library/react';
-import App from './App';
+import App from '../App';
+
+let today = new Date();
+let yyyy = today.getFullYear();
+let month = today.getMonth() + 1; // 0 = January
 
 describe('renders the credit card page', () => {
   afterEach(cleanup);
@@ -21,20 +25,12 @@ describe('renders the credit card page', () => {
     );
     expect(api.getByTestId('exp-year')).toHaveAttribute(
       'placeholder',
-      'Exp. Year (YY)'
+      'Exp. Year (YYYY)'
     );
   });
 
   it('should display errors on the input', () => {
     const api = render(<App />);
-
-    fireEvent.input(api.getByTestId('name'), {
-      target: { value: '11' },
-    });
-    expect(api.getByTestId('error-icon')).toHaveTextContent('error');
-    expect(api.getByTestId('error-name')).toHaveTextContent(
-      'Constraints not satisfied'
-    );
 
     fireEvent.input(api.getByTestId('card'), {
       target: { value: '123' },
@@ -47,14 +43,14 @@ describe('renders the credit card page', () => {
       target: { value: '29' },
     });
     expect(api.getByTestId('error-exp-month')).toHaveTextContent(
-      'Constraints not satisfied'
+      'errorMonth must be between 1 and 12.'
     );
 
     fireEvent.input(api.getByTestId('exp-year'), {
       target: { value: '10' },
     });
     expect(api.getByTestId('error-exp-year')).toHaveTextContent(
-      'Constraints not satisfied'
+      'errorYear must be between 2021 and 2031.'
     );
   });
 
@@ -76,11 +72,11 @@ describe('renders the credit card page', () => {
     });
 
     fireEvent.input(api.getByTestId('exp-month'), {
-      target: { value: '10' },
+      target: { value: month },
     });
 
     fireEvent.input(api.getByTestId('exp-year'), {
-      target: { value: '24' },
+      target: { value: yyyy + 1 },
     });
 
     fireEvent.click(api.getByTestId('submit'));
