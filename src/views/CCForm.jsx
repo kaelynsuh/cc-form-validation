@@ -36,6 +36,8 @@ const ErrorMessage = styled.div`
 `;
 
 const CCForm = () => {
+  const [showForm, setShowForm] = useState(true);
+
   const [data, setData] = useState({
     name: '',
     card: '',
@@ -52,7 +54,26 @@ const CCForm = () => {
     expYear: '',
   });
 
-  const [showForm, setShowForm] = useState(true);
+  const [cardType, setCardType] = useState('card');
+
+  const cards = {
+    amex: {
+      grouping: [4, 6, 5],
+      maxLength: 17,
+      cvv: 4,
+    },
+    visa: {
+      grouping: [4, 4, 4, 4],
+      maxLength: 19,
+      cvv: 3,
+    },
+    card: {
+      grouping: [4, 4, 4, 4],
+      maxLength: 19,
+      cvv: 3,
+    },
+  };
+  console.log('cards: ', cards['amex'].grouping);
 
   console.log('data MAIN: ', data);
   console.log('errors MAIN: ', errors);
@@ -80,6 +101,14 @@ const CCForm = () => {
     let value = e.target.value;
     let match = value.replace(/\s+/g, '');
 
+    if (match.slice(0, 1) === '4') {
+      setCardType('visa');
+    } else if (match.slice(0, 2) === '34' || match.slice(0, 2) === '37') {
+      setCardType('amex');
+    } else {
+      setCardType('card');
+    }
+
     let errorMessage;
     if (value.length === 0) {
       errorMessage = 'Please fill out this field.';
@@ -88,8 +117,9 @@ const CCForm = () => {
     }
 
     let groups = [];
-    for (let i = 0; i < match.length; i += 4) {
-      groups.push(match.substring(i, i + 4));
+    let group = cards[cardType].grouping;
+    for (let i = 0, j = 0; i < match.length; i += group[j], j++) {
+      groups.push(match.substring(i, i + group[j]));
     }
 
     if (groups.length) {
@@ -131,10 +161,8 @@ const CCForm = () => {
             type="text"
             name="name"
             id="name"
-            // ref={nameRef}
             placeholder="Name"
             onChange={onChange('name')}
-            // onChange={(e) => onNameChange('name', e.target.value)}
             pattern="^[a-zA-Z]*$"
             maxLength="40"
             required
@@ -153,7 +181,7 @@ const CCForm = () => {
                 event.preventDefault();
               }
             }}
-            maxLength="19"
+            maxLength={cards[cardType].maxLength}
             required
           />
           {errors.card && <ErrorMessage>{errors.card}</ErrorMessage>}
@@ -169,8 +197,8 @@ const CCForm = () => {
                 event.preventDefault();
               }
             }}
-            minLength="3"
-            maxLength="4"
+            minLength={cards[cardType].cvv}
+            maxLength={cards[cardType].cvv}
             required
           />
           {errors.cvv && <ErrorMessage>{errors.cvv}</ErrorMessage>}
@@ -238,6 +266,8 @@ const CCForm = () => {
               )}
             </div>
           </Expiry>
+
+          {/* <div>{cardType ? cardType : 'All card type'}</div> */}
 
           <button type="submit" disabled={Object.keys(errors).length}>
             Submit
