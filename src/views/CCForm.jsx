@@ -111,17 +111,20 @@ const Result = styled.div`
 const CARDS = {
   amex: {
     grouping: [4, 6, 5],
-    maxLength: 17,
+    length: 15,
+    lengthWithSpaces: 17,
     cvv: 4,
   },
   visa: {
     grouping: [4, 4, 4, 4],
-    maxLength: 19,
+    length: 16,
+    lengthWithSpaces: 19,
     cvv: 3,
   },
   card: {
     grouping: [4, 4, 4, 4],
-    maxLength: 19,
+    length: 16,
+    lengthWithSpaces: 19,
     cvv: 3,
   },
 };
@@ -184,7 +187,7 @@ const CCForm = memo(() => {
       let errorMessage;
       if (value.length === 0) {
         errorMessage = 'Please fill out this field.';
-      } else if (match.length < 16) {
+      } else if (match.length < CARDS[cardType].length) {
         errorMessage = 'Invalid card number.';
       }
 
@@ -273,7 +276,7 @@ const CCForm = memo(() => {
                 event.preventDefault();
               }
             }}
-            maxLength={CARDS[cardType].maxLength}
+            maxLength={CARDS[cardType].lengthWithSpaces}
             required
             error={errors.card}
           />
